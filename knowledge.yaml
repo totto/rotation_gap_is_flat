@@ -9,6 +9,9 @@ description: >
   ternary computation. The published PDF (Paper_3_The_Rotation_Gap_Is_Not_An_Error_v1.pdf)
   landed 2026-04-06; the DOCX (Paper_15_Binary_Ternary_Hybrid_Architecture_v4.docx)
   is a prior working title for the same content.
+doi: "10.5281/zenodo.19437419"
+zenodo_url: "https://zenodo.org/records/19437419"
+published: "2026-04-06"
 version: "1.0"
 created: "2026-04-06"
 maintainer: "Selina Stenberg"
@@ -35,9 +38,9 @@ units:
   - id: paper-pdf
     path: paper/Paper_3_The_Rotation_Gap_Is_Not_An_Error_v1.pdf
     intent: >
-      Published PDF of Paper 3: The Rotation Gap Is Not An Error. Primary orientation
-      unit. Establishes that the 12.6 pp gap between B31 (86.1%) and T75 (98.7%)
-      detection rates is an architectural property of PSL(2,7), not a simulation
+      Published PDF of Paper 3: The Rotation Gap Is Not An Error (DOI: 10.5281/zenodo.19437419).
+      Primary orientation unit. Establishes that the 12.6 pp gap between B31 (86.1%) and
+      T75 (98.7%) detection rates is an architectural property of PSL(2,7), not a simulation
       artefact, and demonstrates zero-overhead qubit→merkabit migration.
     scope: project
     audience: ["human"]
@@ -234,6 +237,28 @@ units:
       token_estimate: 150
       priority: reference
 
+  # COMPANION PAPER (PAPER 4)
+  - id: paper4-rotation-gap-is-flat
+    path: https://zenodo.org/records/19417293
+    intent: >
+      Paper 4: The Rotation Gap Is Flat (DOI: 10.5281/zenodo.19417293, published 2026-04-04).
+      Introduces binary-ternary hybrid architecture on the Eisenstein lattice. Detection rate
+      differences between T75 and B31 remain constant (CV < 0.05) across four orders of
+      magnitude of error rate. Two-scale independence: combined suppression 2450× with zero
+      tunable parameters and zero qubit overhead. Optimal hybrid coupling achieves 8.6–22.6×
+      suppression enabling B31 algorithms to run under T75 protection with fidelity > 0.999.
+    scope: project
+    audience: ["human"]
+    validated: "2026-04-06"
+    triggers:
+      - "Paper 4"
+      - "rotation gap is flat"
+      - "2450x"
+      - "binary ternary hybrid"
+      - "zero qubit overhead"
+      - "fault tolerant"
+      - "migration path"
+
 # ─── RELATIONSHIPS ────────────────────────────────────────────────────────────
 relationships:
   - from: hybrid-simulation
@@ -258,3 +283,8 @@ relationships:
   - from: paper-manuscript
     to: hybrid-simulation
     type: describes
+
+  - from: paper-pdf
+    to: paper4-rotation-gap-is-flat
+    type: precedes
+    note: "Paper 3 (hardware validation + flatness) → Paper 4 (full hybrid architecture + migration path)"

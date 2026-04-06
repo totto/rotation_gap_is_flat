@@ -1,6 +1,7 @@
 # Hardware Validation: Sub-Poissonian Syndrome Statistics on Real IBM Hardware
 
 **Paper 3 — The Rotation Gap Is Not An Error**
+**DOI**: [10.5281/zenodo.19437419](https://zenodo.org/records/19437419)
 **Experiment conducted**: 6 April 2026
 **Hardware**: ibm_strasbourg (Eagle r3, 127-qubit, IBM Quantum pay-as-you-go)
 
