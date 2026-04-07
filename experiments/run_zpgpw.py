@@ -170,9 +170,12 @@ def build_zpgpw_circuit(n_steps: int, basis: str,
 def run_zpgpw(backend, n_steps: int, shots: int,
               q_anc: int, q_fwd: int, q_inv: int,
               zero_angles: bool = False,
-              opt_level: int = 1) -> dict:
+              opt_level: int = 1,
+              dd_sequence: str | None = None) -> dict:
     layout = [q_anc, q_fwd, q_inv]
     label  = "ZP-GPW calib (ctrl-I)" if zero_angles else "ZP-GPW"
+    if dd_sequence:
+        label += f" +DD({dd_sequence})"
     # zero_angles must suppress optimization to prevent transpiler collapsing CX(θ=0) pairs
     if zero_angles:
         opt_level = 0
@@ -192,7 +195,10 @@ def run_zpgpw(backend, n_steps: int, shots: int,
         print(f"   Transpiled depth: {transpiled.depth()}")
 
         sampler = Sampler(backend)
-        job     = sampler.run([transpiled], shots=shots)
+        if dd_sequence:
+            sampler.options.dynamical_decoupling.enable = True
+            sampler.options.dynamical_decoupling.sequence_type = dd_sequence
+        job = sampler.run([transpiled], shots=shots)
         print(f"   Job ID: {job.job_id()}  — waiting …")
         result  = job.result()
 
@@ -248,6 +254,10 @@ def main():
     parser.add_argument("--opt-level",  type=int, default=1, choices=[0, 1, 2, 3],
                         help="Transpiler optimization level (default 1). Use 0 for "
                              "unoptimized matched-depth runs alongside --zero-angles calib.")
+    parser.add_argument("--dd", default=None,
+                        choices=["XY4", "XX", "XpXm", "XY8"],
+                        help="Enable dynamical decoupling with given sequence (e.g. XY4). "
+                             "Inserts π pulses on idle qubits to suppress ZZ coupling.")
     args = parser.parse_args()
 
     # ── Simulation ────────────────────────────────────────────────────────────
@@ -278,7 +288,8 @@ def main():
     result = run_zpgpw(backend, args.steps, args.shots,
                        args.q_anc, args.q_fwd, args.q_inv,
                        zero_angles=args.zero_angles,
-                       opt_level=args.opt_level)
+                       opt_level=args.opt_level,
+                       dd_sequence=args.dd)
 
     if args.zero_angles:
         print(f"\n══ ZP-GPW Calibration (ctrl-I, n={args.steps}) ══════════════")
@@ -295,11 +306,13 @@ def main():
         print(f"  Δδ = {result['delta_deg'] - target['delta_deg']:+.2f}°  "
               f"({abs(result['delta_deg'] - target['delta_deg']):.1f}° error)")
 
-    out = {"ideal": target, "hardware": result, "zero_angles": args.zero_angles}
+    out = {"ideal": target, "hardware": result,
+           "zero_angles": args.zero_angles, "dd_sequence": args.dd}
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     ts     = datetime.now().strftime("%Y%m%d_%H%M%S")
     suffix = "_calib" if args.zero_angles else ""
-    path   = RESULTS_DIR / f"zpgpw_n{args.steps}{suffix}_{backend.name}_{ts}.json"
+    dd_tag = f"_dd{args.dd}" if args.dd else ""
+    path   = RESULTS_DIR / f"zpgpw_n{args.steps}{suffix}{dd_tag}_{backend.name}_{ts}.json"
     with open(path, "w") as f:
         json.dump(out, f, indent=2)
     print(f"\nResults → {path}")
