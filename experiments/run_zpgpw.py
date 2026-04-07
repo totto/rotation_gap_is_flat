@@ -119,10 +119,16 @@ def _ctrl_rx(qc: QuantumCircuit, theta: float, anc: int, target: int) -> None:
 
 
 def _append_ctrl_u0(qc: QuantumCircuit, anc: int, q_fwd: int, q_inv: int,
-                    n_steps: int) -> None:
-    """Append n_steps of controlled-U₀ using native CX(anc→q_fwd/q_inv)."""
+                    n_steps: int, zero_angles: bool = False) -> None:
+    """Append n_steps of controlled-U₀ using native CX(anc→q_fwd/q_inv).
+
+    zero_angles=True: use all-zero rotation angles (ctrl-Identity).
+    Preserves the full circuit structure (same CX skeleton) for matched-depth
+    calibration — use with optimization_level=0 to prevent transpiler from
+    collapsing the paired CX gates that cancel at θ=0.
+    """
     for k in range(n_steps):
-        p, rz, rx = get_gate_angles(k)
+        p, rz, rx = (0.0, 0.0, 0.0) if zero_angles else get_gate_angles(k)
         # q_fwd: controlled-Rz(rz-p) then controlled-Rx(rx)
         _ctrl_rz(qc, rz - p, anc, q_fwd)
         _ctrl_rx(qc, rx,     anc, q_fwd)
@@ -131,7 +137,8 @@ def _append_ctrl_u0(qc: QuantumCircuit, anc: int, q_fwd: int, q_inv: int,
         _ctrl_rx(qc, rx,     anc, q_inv)
 
 
-def build_zpgpw_circuit(n_steps: int, basis: str) -> QuantumCircuit:
+def build_zpgpw_circuit(n_steps: int, basis: str,
+                        zero_angles: bool = False) -> QuantumCircuit:
     """
     ZP-GPW Hadamard test circuit.
 
@@ -149,8 +156,8 @@ def build_zpgpw_circuit(n_steps: int, basis: str) -> QuantumCircuit:
     cr = ClassicalRegister(1, 'c')   # measure ancilla only
     qc = QuantumCircuit(qr, cr)
 
-    qc.h(qr[0])                             # anc → |+⟩
-    _append_ctrl_u0(qc, 0, 1, 2, n_steps)   # controlled-U₀_n
+    qc.h(qr[0])                                              # anc → |+⟩
+    _append_ctrl_u0(qc, 0, 1, 2, n_steps, zero_angles)      # controlled-U₀_n
     if basis == 'Y':
         qc.sdg(qr[0])                       # rotate to Y basis
     qc.h(qr[0])                             # close Hadamard test
@@ -161,17 +168,23 @@ def build_zpgpw_circuit(n_steps: int, basis: str) -> QuantumCircuit:
 # ─── Hardware run ──────────────────────────────────────────────────────────────
 
 def run_zpgpw(backend, n_steps: int, shots: int,
-              q_anc: int, q_fwd: int, q_inv: int) -> dict:
+              q_anc: int, q_fwd: int, q_inv: int,
+              zero_angles: bool = False,
+              opt_level: int = 1) -> dict:
     layout = [q_anc, q_fwd, q_inv]
+    label  = "ZP-GPW calib (ctrl-I)" if zero_angles else "ZP-GPW"
+    # zero_angles must suppress optimization to prevent transpiler collapsing CX(θ=0) pairs
+    if zero_angles:
+        opt_level = 0
 
     results = {}
     for basis in ('X', 'Y'):
-        qc = build_zpgpw_circuit(n_steps, basis)
-        print(f"\n── ZP-GPW {basis}-basis  (n={n_steps} steps) ─────────────────────")
+        qc = build_zpgpw_circuit(n_steps, basis, zero_angles)
+        print(f"\n── {label} {basis}-basis  (n={n_steps} steps) ─────────────────────")
         print(f"   Abstract depth : {qc.depth()}   gates : {qc.size()}")
 
         pm = generate_preset_pass_manager(
-            optimization_level=1,
+            optimization_level=opt_level,
             backend=backend,
             initial_layout=layout,
         )
@@ -227,7 +240,14 @@ def main():
     parser.add_argument("--q-anc",   type=int, default=72)
     parser.add_argument("--q-fwd",   type=int, default=62)
     parser.add_argument("--q-inv",   type=int, default=81)
-    parser.add_argument("--sim-only", action="store_true")
+    parser.add_argument("--sim-only",    action="store_true")
+    parser.add_argument("--zero-angles", action="store_true",
+                        help="Matched-depth calibration: run ctrl-Identity (all angles=0). "
+                             "Measures pure ZZ-coupling phase error at this circuit depth. "
+                             "Subtract result from the signal run to get corrected phase.")
+    parser.add_argument("--opt-level",  type=int, default=1, choices=[0, 1, 2, 3],
+                        help="Transpiler optimization level (default 1). Use 0 for "
+                             "unoptimized matched-depth runs alongside --zero-angles calib.")
     args = parser.parse_args()
 
     # ── Simulation ────────────────────────────────────────────────────────────
@@ -256,20 +276,30 @@ def main():
     print(f"Steps: {args.steps}   Shots: {args.shots}")
 
     result = run_zpgpw(backend, args.steps, args.shots,
-                       args.q_anc, args.q_fwd, args.q_inv)
+                       args.q_anc, args.q_fwd, args.q_inv,
+                       zero_angles=args.zero_angles,
+                       opt_level=args.opt_level)
 
-    print(f"\n══ ZP-GPW Summary (n={args.steps}) ═══════════════════════════")
-    print(f"  Ideal  :  ⟨X⟩={target['m00_re']:+.4f}  ⟨Y⟩={target['m00_im']:+.4f}  "
-          f"δ={target['delta_deg']:+.2f}°")
-    print(f"  Hardware: ⟨X⟩={result['x_hw']:+.4f}  ⟨Y⟩={result['y_hw']:+.4f}  "
-          f"δ={result['delta_deg']:+.2f}°")
-    print(f"  Δδ = {result['delta_deg'] - target['delta_deg']:+.2f}°  "
-          f"({abs(result['delta_deg'] - target['delta_deg']):.1f}° error)")
+    if args.zero_angles:
+        print(f"\n══ ZP-GPW Calibration (ctrl-I, n={args.steps}) ══════════════")
+        print(f"  True δ  :  0.00°  (ctrl-Identity, δ_true = 0)")
+        print(f"  Hardware: ⟨X⟩={result['x_hw']:+.4f}  ⟨Y⟩={result['y_hw']:+.4f}  "
+              f"δ_hw={result['delta_deg']:+.2f}°")
+        print(f"  Phase offset (subtract from signal run): {result['delta_deg']:+.2f}°")
+    else:
+        print(f"\n══ ZP-GPW Summary (n={args.steps}) ═══════════════════════════")
+        print(f"  Ideal  :  ⟨X⟩={target['m00_re']:+.4f}  ⟨Y⟩={target['m00_im']:+.4f}  "
+              f"δ={target['delta_deg']:+.2f}°")
+        print(f"  Hardware: ⟨X⟩={result['x_hw']:+.4f}  ⟨Y⟩={result['y_hw']:+.4f}  "
+              f"δ={result['delta_deg']:+.2f}°")
+        print(f"  Δδ = {result['delta_deg'] - target['delta_deg']:+.2f}°  "
+              f"({abs(result['delta_deg'] - target['delta_deg']):.1f}° error)")
 
-    out = {"ideal": target, "hardware": result}
+    out = {"ideal": target, "hardware": result, "zero_angles": args.zero_angles}
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    ts  = datetime.now().strftime("%Y%m%d_%H%M%S")
-    path = RESULTS_DIR / f"zpgpw_n{args.steps}_{backend.name}_{ts}.json"
+    ts     = datetime.now().strftime("%Y%m%d_%H%M%S")
+    suffix = "_calib" if args.zero_angles else ""
+    path   = RESULTS_DIR / f"zpgpw_n{args.steps}{suffix}_{backend.name}_{ts}.json"
     with open(path, "w") as f:
         json.dump(out, f, indent=2)
     print(f"\nResults → {path}")

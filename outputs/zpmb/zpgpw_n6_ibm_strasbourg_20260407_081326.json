@@ -1,0 +1,44 @@
+{
+  "ideal": {
+    "n_steps": 6,
+    "m00_re": 0.7187480114209918,
+    "m00_im": -0.4965642630745443,
+    "magnitude": 0.8735987473001523,
+    "delta_rad": -0.6045747895621292,
+    "delta_deg": -34.6395838419199
+  },
+  "hardware": {
+    "n_steps": 6,
+    "x_hw": -0.0439453125,
+    "y_hw": -0.5673828125,
+    "delta_hw": -1.6480946723461252,
+    "delta_deg": -94.42886896342924,
+    "runs": {
+      "X": {
+        "counts": {
+          "1": 4276,
+          "0": 3916
+        },
+        "shots": 8192,
+        "exp_val": -0.0439453125,
+        "transpiled_depth": 333,
+        "abstract_depth": 99,
+        "job_id": "d7aa0uvbf94c73bibd60"
+      },
+      "Y": {
+        "counts": {
+          "1": 6420,
+          "0": 1772
+        },
+        "shots": 8192,
+        "exp_val": -0.5673828125,
+        "transpiled_depth": 334,
+        "abstract_depth": 100,
+        "job_id": "d7aa1161co6s73d8e98g"
+      }
+    },
+    "backend": "ibm_strasbourg",
+    "timestamp": "2026-04-07T08:13:26.243004"
+  },
+  "zero_angles": false
+}
