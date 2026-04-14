@@ -1,0 +1,563 @@
+kcp_version: "0.14"
+project: "rotation_gap_is_flat"
+description: >
+  Paper 15: The Binary-Ternary Hybrid Architecture — simulation code, hardware experiments,
+  and the ZPMB (Zero-Point Merkabit Benchmark) hardware validation. Demonstrates the flat
+  rotation gap: 12.6 pp detection rate difference between B31 (static, chirality=0, 86.1%)
+  and T75 (dynamic, chirality +/-1, 98.7%) is constant across four orders of magnitude of
+  error rate (CV < 3%). Two-scale error correction: intra-unit toroidal correction (S_torus
+  = 35x) x inter-unit torsion channel (S_L2 = 26.6x) = 931-1862x combined suppression with
+  zero qubit overhead. Eisenstein torus simulation shows genuine exponential suppression.
+  ZPMB hardware validation on ibm_strasbourg (Eagle r3): ZP-ORF = 0.968, pi-lock confirmed
+  (ZZ = +0.44, XX = -0.45), geometric phase witness with matched-depth calibration.
+  Includes repetition code Fano factor experiment pipeline for IBM hardware.
+version: "1.0"
+created: "2026-04-14"
+maintainer: "Selina Stenberg"
+
+# ─── UNITS ────────────────────────────────────────────────────────────────────
+units:
+
+  # ORIENTATION
+  - id: readme
+    path: README.md
+    intent: >
+      Entry point: three key results (12.6 pp rotation gap, 931-1862x two-scale suppression,
+      asymmetric optimal coupling), central comparison table (surface code vs binary vs hybrid
+      vs ternary), repository structure, simulation run commands, requirements (NumPy only),
+      key insight ("the R gate sits inert in every qubit"), related papers.
+    scope: global
+    audience: ["human", "physicist"]
+    validated: "2026-04-14"
+    hints:
+      load_strategy: eager
+      token_estimate: 250
+      priority: critical
+    triggers:
+      - "rotation gap"
+      - "Paper 15"
+      - "binary-ternary hybrid"
+      - "flat rotation gap"
+      - "two-scale"
+      - "931x"
+      - "1862x"
+      - "zero qubit overhead"
+
+  - id: zpmb-hardware-validation
+    path: ZPMB_HARDWARE_VALIDATION.md
+    intent: >
+      Complete ZPMB hardware validation report from ibm_strasbourg (Eagle r3), April 6-7 2026.
+      Four experiments: (1) ZP-ORF = 0.968 (ouroboros reversibility, paired vs unpaired),
+      (2) U0 forward pass — state distribution matches ideal to 2%, ZZ = +0.44,
+      (3) ZP-PPW Hadamard test — XX = -0.45 (pi-lock phase anti-correlation confirmed,
+      unplanned discovery from native CX direction), (4) ZP-GPW geometric phase witness —
+      5 rounds including baseline calibration, matched-depth calibration (86% gradient
+      accuracy), dynamical decoupling negative result. Includes all output file paths,
+      IBM job IDs, and open items for further experimentation.
+    scope: global
+    audience: ["human", "physicist"]
+    validated: "2026-04-14"
+    hints:
+      load_strategy: eager
+      token_estimate: 700
+      priority: critical
+    triggers:
+      - "ZPMB"
+      - "ZP-ORF"
+      - "ZP-PPW"
+      - "ZP-GPW"
+      - "pi-lock"
+      - "hardware validation"
+      - "ibm_strasbourg"
+      - "ouroboros reversibility"
+      - "0.968"
+      - "geometric phase witness"
+
+  - id: license
+    path: LICENSE
+    intent: "MIT License, copyright 2026 Selina Stenberg"
+    scope: global
+    audience: ["human"]
+    validated: "2026-04-14"
+    hints:
+      load_strategy: lazy
+      token_estimate: 30
+      priority: reference
+
+  # SIMULATIONS — CORE
+  - id: binary-ternary-hybrid-simulation
+    path: simulations/binary_ternary_hybrid_simulation.py
+    intent: >
+      Central simulation for Paper 15. Engineers combined binary-ternary architecture:
+      B31 computational layer (chirality=0, static, 3-gate set {R,S,T}) coupled to T75
+      error substrate (chirality +/-1, dynamic, 5-gate set) through Z62 interface.
+      Measures detection rate, Fano factor, suppression ratio, and optimal coupling kappa.
+      The ouroboros rotation absent(base, chirality, t) = (base + chirality*t) % 5 IS
+      the physical mechanism. All angles from E6 Coxeter geometry. Seed=42, NumPy only.
+    scope: module
+    audience: ["developer", "physicist"]
+    validated: "2026-04-14"
+    hints:
+      load_strategy: lazy
+      token_estimate: 3300
+      priority: critical
+    triggers:
+      - "hybrid simulation"
+      - "B31 T75"
+      - "Z62 interface"
+      - "coupling kappa"
+      - "ouroboros rotation"
+      - "detection rate"
+
+  - id: scale-separation-sweep
+    path: simulations/scale_separation_sweep.py
+    intent: >
+      Measures B31 baseline, T75 Scale 2, Scale 1 analytical (S_torus = exp(3) = 35x),
+      and combined suppression independently at each of 14 error rates. Tests whether
+      multiplicative two-scale structure holds uniformly. Shows the rotation gap is
+      FLAT — CV < 3% across four orders of magnitude. Where does the gap peak? Does
+      it widen or narrow with error rate?
+    scope: module
+    audience: ["developer", "physicist"]
+    validated: "2026-04-14"
+    hints:
+      load_strategy: lazy
+      token_estimate: 1400
+      priority: critical
+    triggers:
+      - "scale separation"
+      - "error rate sweep"
+      - "14 error rates"
+      - "CV < 3%"
+      - "flat across"
+      - "S_torus"
+
+  - id: asymptote-mapping
+    path: simulations/asymptote_mapping.py
+    intent: >
+      Maps suppression asymptote across five Eisenstein cell sizes: r=1(7), r=2(19),
+      r=3(37), r=4(61), r=5(91) nodes. Tests whether T75 suppression saturates or keeps
+      climbing, whether rotation gap widens/narrows/stays flat, and where the asymptote
+      sits. S_L2 = 26.6x at 37 nodes.
+    scope: module
+    audience: ["developer", "physicist"]
+    validated: "2026-04-14"
+    hints:
+      load_strategy: lazy
+      token_estimate: 1400
+      priority: high
+    triggers:
+      - "asymptote"
+      - "cell size"
+      - "7 19 37 61 91"
+      - "saturation"
+      - "S_L2"
+
+  - id: eisenstein-torus-simulation
+    path: simulations/eisenstein_torus_simulation.py
+    intent: >
+      Genuine exponential error suppression on the Eisenstein torus (periodic boundary
+      conditions). No boundary nodes, so the Peierls argument applies cleanly. Minimum
+      weight of undetectable pattern grows with system size, enabling epsilon_L <=
+      n * (mu * epsilon * p_undet)^d(L). Quotient Z[omega] / Lambda_L with L^2 nodes,
+      each having exactly 6 neighbours spanning all 3 chirality classes.
+    scope: module
+    audience: ["developer", "physicist"]
+    validated: "2026-04-14"
+    hints:
+      load_strategy: lazy
+      token_estimate: 2800
+      priority: high
+    triggers:
+      - "Eisenstein torus"
+      - "periodic boundary"
+      - "exponential suppression"
+      - "Peierls argument"
+      - "toroidal"
+
+  - id: temporal-spatial-bridge
+    path: simulations/temporal_spatial_bridge.py
+    intent: >
+      Tests the central claim: ouroboros cycle temporal periodicity provides effective
+      spatial periodicity at boundary nodes. Boundary nodes on open cells have only 3
+      spatial neighbours (missing 3), degraded detection ~85-92%. The ouroboros cycle's
+      forward/inverse half-cycles (R/R-bar symmetry) compensate for missing spatial
+      neighbours through the time domain. Compares open cell baseline with temporal
+      bridge correction.
+    scope: module
+    audience: ["developer", "physicist"]
+    validated: "2026-04-14"
+    hints:
+      load_strategy: lazy
+      token_estimate: 2000
+      priority: high
+    triggers:
+      - "temporal-spatial bridge"
+      - "boundary node"
+      - "R-bar symmetry"
+      - "effective periodicity"
+      - "time domain correction"
+
+  # EXPERIMENTS — HARDWARE PIPELINE
+  - id: run-zpmb
+    path: experiments/run_zpmb.py
+    intent: >
+      ZP-ORF (Zero-Point Return Fidelity) on IBM hardware. Two experiments: paired
+      (real merkabit P gate: Rz(-phi) on q+, Rz(+phi) on q-) vs unpaired (control,
+      P gate removed). ZP-ORF = Pr(q+=0, q-=0). Measures Level 1 noise cancellation
+      (suppression ratio = paired/unpaired). Result: 0.968 / 0.967 = 1.001x.
+    scope: module
+    audience: ["developer", "physicist"]
+    validated: "2026-04-14"
+    hints:
+      load_strategy: lazy
+      token_estimate: 700
+      priority: high
+    triggers:
+      - "ZP-ORF"
+      - "run ZPMB"
+      - "paired vs unpaired"
+      - "Level 1"
+
+  - id: run-u0
+    path: experiments/run_u0.py
+    intent: >
+      U0 forward pass + ZP-PPW (pi-Lock Parity Witness) on IBM hardware. Runs 12
+      ouroboros steps without dagger — circuit cannot be optimised away (transpiled
+      depth 6). Direct readout of state distribution + ancilla parity map via
+      CX(q+, anc), CX(q-, anc). ZZ = +0.44 confirms pi-lock.
+    scope: module
+    audience: ["developer", "physicist"]
+    validated: "2026-04-14"
+    hints:
+      load_strategy: lazy
+      token_estimate: 750
+      priority: high
+    triggers:
+      - "U0 forward"
+      - "ZP-PPW"
+      - "parity witness"
+      - "pi-lock"
+      - "state distribution"
+
+  - id: run-zpgpw
+    path: experiments/run_zpgpw.py
+    intent: >
+      ZP-GPW (Zero-Point Geometric Phase Witness) on IBM hardware. Measures geometric
+      phase delta via Hadamard test: H(anc) -> ctrl-U0_n -> H(anc) -> measure (X-basis)
+      or Sdg+H (Y-basis). Delta_n = atan2(Y, X). Uses native ibm_strasbourg CX directions
+      (anc=72 -> q+=62, q-=81). Controlled-Rz decomposition included. Five rounds of
+      experiments with baseline, matched-depth calibration, and DD (negative result).
+    scope: module
+    audience: ["developer", "physicist"]
+    validated: "2026-04-14"
+    hints:
+      load_strategy: lazy
+      token_estimate: 850
+      priority: high
+    triggers:
+      - "ZP-GPW"
+      - "geometric phase witness"
+      - "Hadamard test"
+      - "controlled-Rz"
+      - "phase accumulation"
+      - "matched-depth calibration"
+
+  - id: classifier
+    path: experiments/classifier.py
+    intent: >
+      Regime classifier module: identifies ternary (T75) syndrome events and abstains
+      from correcting them, leaving standard decoder for B31 (binary) errors. Based on
+      Paper 3 Table 2: five structural features, threshold theta = 0.3. Includes Z3
+      sublattice (chirality) assignment for ancilla positions.
+    scope: module
+    audience: ["developer"]
+    validated: "2026-04-14"
+    hints:
+      load_strategy: lazy
+      token_estimate: 550
+      priority: reference
+    triggers:
+      - "classifier"
+      - "T75 identification"
+      - "theta threshold"
+
+  - id: fano
+    path: experiments/fano.py
+    intent: >
+      Fano factor analysis module. F = Var(n) / Mean(n) for total syndrome activations
+      per shot. F < 1 = sub-Poissonian (anti-bunched, ternary signal), F = 1 = Poisson
+      (independent errors), F > 1 = super-Poissonian (bunched, correlated errors like
+      Willow). Provides full_report and print_report functions.
+    scope: module
+    audience: ["developer"]
+    validated: "2026-04-14"
+    hints:
+      load_strategy: lazy
+      token_estimate: 400
+      priority: reference
+    triggers:
+      - "Fano factor"
+      - "sub-Poissonian"
+      - "syndrome statistics"
+
+  - id: find-cells
+    path: experiments/find_cells.py
+    intent: >
+      Maps IBM heavy-hex topology (e.g. ibm_fez) to hexagonal Eisenstein cells. Builds
+      vertex graph from degree-3 (lattice vertices) and degree-2 (edge qubits) nodes.
+      Outputs cell coordinates to JSON.
+    scope: module
+    audience: ["developer"]
+    validated: "2026-04-14"
+    hints:
+      load_strategy: lazy
+      token_estimate: 250
+      priority: reference
+    triggers:
+      - "heavy-hex mapping"
+      - "find cells"
+      - "ibm_fez"
+
+  - id: repetition-code
+    path: experiments/repetition_code.py
+    intent: >
+      Builds distance-d repetition code circuits with T syndrome rounds for Fano factor
+      measurement. d data qubits, (d-1) ancilla qubits, T rounds of syndrome extraction.
+      Classical bits layout: [T*(d-1) syndrome bits] [d final data bits].
+    scope: module
+    audience: ["developer"]
+    validated: "2026-04-14"
+    hints:
+      load_strategy: lazy
+      token_estimate: 250
+      priority: reference
+    triggers:
+      - "repetition code"
+      - "syndrome rounds"
+      - "build circuit"
+
+  - id: run-hardware
+    path: experiments/run_hardware.py
+    intent: >
+      Runs the Fano factor experiment on real IBM Quantum hardware. Requires IBM Quantum
+      account + API token (save via QiskitRuntimeService or env var IBM_QUANTUM_TOKEN).
+      Uses SamplerV2 with preset pass manager. Transpiles repetition code circuits and
+      submits to selected backend (default: ibm_torino).
+    scope: module
+    audience: ["developer"]
+    validated: "2026-04-14"
+    hints:
+      load_strategy: lazy
+      token_estimate: 400
+      priority: reference
+    triggers:
+      - "run hardware"
+      - "IBM Quantum"
+      - "API token"
+      - "SamplerV2"
+
+  - id: run-simulator
+    path: experiments/run_simulator.py
+    intent: >
+      Validates the experiment pipeline on Qiskit Aer simulator before using hardware.
+      Two noise regimes: pure depolarizing (should give F ~ 1, classifier neutral) and
+      mixed depolarizing + correlated (should give F < 1, classifier helps). Uses
+      repetition_code, fano, and classifier modules.
+    scope: module
+    audience: ["developer"]
+    validated: "2026-04-14"
+    hints:
+      load_strategy: lazy
+      token_estimate: 300
+      priority: reference
+    triggers:
+      - "simulator"
+      - "noise model"
+      - "depolarizing"
+      - "pipeline validation"
+
+  # SIMULATION OUTPUTS
+  - id: output-hybrid
+    path: outputs/binary_ternary_hybrid_output.txt
+    intent: "Full output from binary-ternary hybrid simulation: detection rates, Fano factors, suppression ratios, coupling sweep"
+    scope: data
+    audience: ["developer"]
+    validated: "2026-04-14"
+    hints:
+      load_strategy: lazy
+      token_estimate: 600
+      priority: reference
+
+  - id: output-scale-separation
+    path: outputs/scale_separation_sweep_output.txt
+    intent: "Scale separation sweep results: 14 error rates, B31/T75 detection, rotation gap flatness, combined suppression"
+    scope: data
+    audience: ["developer"]
+    validated: "2026-04-14"
+    hints:
+      load_strategy: lazy
+      token_estimate: 550
+      priority: reference
+
+  - id: output-asymptote
+    path: outputs/asymptote_mapping_output.txt
+    intent: "Asymptote mapping results: suppression across 5 Eisenstein cell sizes (7 to 91 nodes)"
+    scope: data
+    audience: ["developer"]
+    validated: "2026-04-14"
+    hints:
+      load_strategy: lazy
+      token_estimate: 450
+      priority: reference
+
+  - id: output-torus
+    path: outputs/eisenstein_torus_output.txt
+    intent: "Eisenstein torus simulation results: exponential suppression on periodic boundaries"
+    scope: data
+    audience: ["developer"]
+    validated: "2026-04-14"
+    hints:
+      load_strategy: lazy
+      token_estimate: 600
+      priority: reference
+
+  - id: output-bridge
+    path: outputs/temporal_spatial_bridge_output.txt
+    intent: "Temporal-spatial bridge results: boundary node detection improvement via ouroboros time domain"
+    scope: data
+    audience: ["developer"]
+    validated: "2026-04-14"
+    hints:
+      load_strategy: lazy
+      token_estimate: 500
+      priority: reference
+
+  # HARDWARE OUTPUTS
+  - id: outputs-hardware
+    path: outputs/hardware/
+    intent: "IBM hardware Fano factor experiment raw JSON output from ibm_fez (April 6 2026)"
+    scope: data
+    audience: ["developer"]
+    validated: "2026-04-14"
+    hints:
+      load_strategy: lazy
+      token_estimate: 100
+      priority: reference
+
+  - id: outputs-zpmb
+    path: outputs/zpmb/
+    intent: >
+      All ZPMB experiment JSON outputs from ibm_strasbourg: ZP-ORF (1 file), U0 forward
+      pass + ZP-PPW (2 files), ZP-GPW signal/calibration/DD across n=0,2,4,6 (11 files).
+      Includes negative DD result data.
+    scope: data
+    audience: ["developer"]
+    validated: "2026-04-14"
+    hints:
+      load_strategy: lazy
+      token_estimate: 400
+      priority: reference
+
+  - id: ibm-fez-cells
+    path: outputs/ibm_fez_cells.json
+    intent: "Hexagonal Eisenstein cell coordinates extracted from ibm_fez heavy-hex topology"
+    scope: data
+    audience: ["developer"]
+    validated: "2026-04-14"
+    hints:
+      load_strategy: lazy
+      token_estimate: 50
+      priority: reference
+
+  - id: ibm-fez-coupling-map
+    path: outputs/ibm_fez_coupling_map.json
+    intent: "ibm_fez coupling map edges for heavy-hex to Eisenstein cell mapping"
+    scope: data
+    audience: ["developer"]
+    validated: "2026-04-14"
+    hints:
+      load_strategy: lazy
+      token_estimate: 100
+      priority: reference
+
+  # PAPER
+  - id: paper-manuscript
+    path: paper/Paper_15_Binary_Ternary_Hybrid_Architecture_v4.docx
+    intent: >
+      Paper 15 manuscript (v4): binary-ternary hybrid architecture, two-scale error
+      correction, rotation gap, migration path to fault-tolerant quantum computation.
+      Word format.
+    scope: global
+    audience: ["human"]
+    validated: "2026-04-14"
+    hints:
+      load_strategy: lazy
+      token_estimate: 5000
+      priority: critical
+    triggers:
+      - "Paper 15 manuscript"
+      - "paper docx"
+      - "full paper"
+
+# ─── RELATIONSHIPS ────────────────────────────────────────────────────────────
+relationships:
+  - from: readme
+    to: zpmb-hardware-validation
+    type: related
+    note: "README covers simulations; ZPMB covers hardware validation"
+
+  - from: binary-ternary-hybrid-simulation
+    to: scale-separation-sweep
+    type: precedes
+    note: "Main simulation establishes architecture; sweep tests across error rates"
+
+  - from: scale-separation-sweep
+    to: asymptote-mapping
+    type: precedes
+    note: "Sweep shows flatness; asymptote maps across cell sizes"
+
+  - from: binary-ternary-hybrid-simulation
+    to: eisenstein-torus-simulation
+    type: related
+    note: "Open cell (hybrid) vs periodic boundary (torus) — different suppression regimes"
+
+  - from: binary-ternary-hybrid-simulation
+    to: temporal-spatial-bridge
+    type: related
+    note: "Bridge test validates that temporal cycling compensates for missing spatial neighbours"
+
+  - from: run-zpmb
+    to: run-u0
+    type: precedes
+    note: "ZP-ORF (reversibility) confirmed first, then U0 forward pass (non-trivial dynamics)"
+
+  - from: run-u0
+    to: run-zpgpw
+    type: precedes
+    note: "Direct readout -> parity witness -> geometric phase witness (increasing complexity)"
+
+  - from: repetition-code
+    to: run-simulator
+    type: precedes
+    note: "Circuit builder feeds into simulator validation"
+
+  - from: run-simulator
+    to: run-hardware
+    type: precedes
+    note: "Validate pipeline on simulator before spending IBM hardware credits"
+
+  - from: fano
+    to: run-simulator
+    type: related
+    note: "Fano analysis module used by both simulator and hardware runs"
+
+  - from: classifier
+    to: run-simulator
+    type: related
+    note: "Classifier module used by simulator for T75 identification testing"
+
+  - from: find-cells
+    to: ibm-fez-cells
+    type: precedes
+    note: "Cell finder produces the ibm_fez_cells.json output"

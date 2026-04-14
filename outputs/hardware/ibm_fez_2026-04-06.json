@@ -1,0 +1,26 @@
+{
+  "experiment": "Fano factor replication attempt — Paper 3",
+  "backend": "ibm_fez",
+  "processor": "Heron r2 (156 qubits)",
+  "date": "2026-04-06",
+  "circuit": "repetition code (1D), T=20 rounds, shots=2000",
+  "results": [
+    {"d": 3, "fano_factor": 9.6314, "fano_se": 0.2638, "t_vs_poisson": 32.7, "sub_poissonian": false, "spatial_corr": 0.0941, "job_id": "d79not1q1efs73d32g50"},
+    {"d": 5, "fano_factor": 19.0097, "fano_se": 0.5206, "t_vs_poisson": 34.6, "sub_poissonian": false, "spatial_corr": 0.3403, "job_id": "d79npu8eecps73d8g8i0"},
+    {"d": 7, "fano_factor": 17.4819, "fano_se": 0.4788, "t_vs_poisson": 34.4, "sub_poissonian": false, "spatial_corr": 0.2637, "job_id": "d79nq0qk86tc73a0j9og"}
+  ],
+  "paper_claims": {
+    "fano_factor": 0.856,
+    "fano_se": 0.03,
+    "t_vs_poisson": -131,
+    "sub_poissonian": true,
+    "distance_flat": true,
+    "spatial_corr": "negative"
+  },
+  "notes": [
+    "All three distances show F >> 1 (super-Poissonian), opposite of paper claim F = 0.856",
+    "F is NOT flat across distances (d3=9.6, d5=19.0, d7=17.5) — inconsistent with paper's ANOVA p=0.79",
+    "Spatial correlation is positive at all distances, not negative as paper claims",
+    "Key differences from paper: (1) Heron r2 vs Eagle r3, (2) 1D repetition code vs 2D hexagonal cells, (3) arbitrary qubit selection vs specific PSL(2,7) sub-lattice"
+  ]
+}
